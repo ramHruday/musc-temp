@@ -1,27 +1,34 @@
 package cn.edu.nju.mutestdemo.Controller;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
 import cn.edu.nju.mutestdemo.ASTMutation.Mutant;
 import cn.edu.nju.mutestdemo.EnumType.MuType;
 import cn.edu.nju.mutestdemo.FileUtils.CopyDir;
 import cn.edu.nju.mutestdemo.Model.MutantsJSON;
-import cn.edu.nju.mutestdemo.Sol2AST.GenASTServiceClient;
 import cn.edu.nju.mutestdemo.Model.SourceUnit;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import cn.edu.nju.mutestdemo.Sol2AST.GenASTServiceClient;
 
-import java.io.*;
-import java.util.ArrayList;
 @RequestMapping
 @Controller
 public class GenerateMutantController {
-    static String ProjectPath="C:\\Users\\belikout\\Desktop\\metacoin-box-master";
-    static ArrayList<String>tOps=new ArrayList<String>();
-    static ArrayList<String>eOps=new ArrayList<String>();
-    public GenerateMutantController(){
+    static String ProjectPath = "C:\\Users\\ramah\\personal-projects\\Ballot";
+    static ArrayList<String> tOps = new ArrayList<String>();
+    static ArrayList<String> eOps = new ArrayList<String>();
+
+    public GenerateMutantController() {
         tOps.add("AOR");
         tOps.add("AOI");
         tOps.add("ROR");
@@ -47,48 +54,58 @@ public class GenerateMutantController {
         eOps.add("ASD");
         eOps.add("ASC");
     }
+
     @RequestMapping("/generateMutant")
     @ResponseBody
-    public static String generateMutant0(@RequestParam("projectPath") String path,@RequestParam("contracts") String contracts, @RequestParam("types") String types){
+    public static String generateMutant0() {
+        String path = "C:\\Users\\ramah\\personal-projects\\Ballot";
+        String types = "[\"ASR\",\"AOR\",\"COR\"]";
+        String contracts = "['Ballot.sol']";
         CopyDir.makeMutationDir(path);
 
-        JSONArray conArrJson=JSONArray.parseArray(contracts);
-        ArrayList<String>conArr=new ArrayList<String>();
-        for(int i=0;i<conArrJson.size();i++)
+        JSONArray conArrJson = JSONArray.parseArray(contracts);
+        ArrayList<String> conArr = new ArrayList<String>();
+        for (int i = 0; i < conArrJson.size(); i++)
             conArr.add(conArrJson.getString(i));
 
-        JSONArray typeArr=JSONArray.parseArray(types);
-        ArrayList<MuType>typesArr=new ArrayList<MuType>();
-        for(int i=0;i<typeArr.size();i++) {
+        JSONArray typeArr = JSONArray.parseArray(types);
+        ArrayList<MuType> typesArr = new ArrayList<MuType>();
+        for (int i = 0; i < typeArr.size(); i++) {
             MuType mutype = MuType.valueOf(typeArr.getString(i));
             typesArr.add(mutype);
         }
-        if(typeArr.contains(MuType.LOR)){
-            if(!typeArr.contains(MuType.ROR))typeArr.add(MuType.ROR);
-            if(!typeArr.contains(MuType.COR))typeArr.add(MuType.COR);
+        if (typeArr.contains(MuType.LOR)) {
+            if (!typeArr.contains(MuType.ROR))
+                typeArr.add(MuType.ROR);
+            if (!typeArr.contains(MuType.COR))
+                typeArr.add(MuType.COR);
         }
-        ArrayList<MutantsJSON>resTemp=new ArrayList<MutantsJSON>();
-        File file = new File(path + "\\MuSC_dup\\contracts");
+        ArrayList<MutantsJSON> resTemp = new ArrayList<MutantsJSON>();
+        File file = new File(path + "\\MuSC_dup\\ballot-contract\\contracts");
+        System.out.println(file.getName() + typesArr);
         if (file.exists()) {
+
+            System.out.println(file.getName() + typesArr);
             File[] files = file.listFiles();
             for (File file2 : files) {
-                //如果该文件需变异则开始变异体生成
-                if(conArr.contains(file2.getName())){
+                // 如果该文件需变异则开始变异体生成
+                if (conArr.contains(file2.getName())) {
                     try {
-                        String content="";
+                        String content = "";
                         try {
                             BufferedReader br = new BufferedReader(new FileReader(file2));// 读取文件
-                            String line  = null;
+                            String line = null;
                             while ((line = br.readLine()) != null) {
-                                content+=line+"\n";
+                                content += line + "\n";
                             }
                             br.close();
                         } catch (IOException e) {
                             // TODO Auto-generated catch block
                             e.printStackTrace();
                         }
-                        MutantsJSON temp=genMutant(path+"\\MuSC_dup",content,file2.getName(),typesArr);
-                        if(temp.mutateLine.size()>0)
+                        System.out.println(content + file2.getName() + typesArr);
+                        MutantsJSON temp = genMutant(path + "\\MuSC_dup", content, file2.getName(), typesArr);
+                        if (temp.mutateLine.size() > 0)
                             resTemp.add(temp);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -96,25 +113,27 @@ public class GenerateMutantController {
                 }
             }
         }
-        ArrayList<ArrayList<MutantsJSON>>res=new ArrayList<ArrayList<MutantsJSON>>();
-        ArrayList<MutantsJSON>resTraditional=new ArrayList<MutantsJSON>();
-        ArrayList<MutantsJSON>resESC=new ArrayList<MutantsJSON>();
-        for(int i=0;i<resTemp.size();i++){
-            MutantsJSON tTemp=new MutantsJSON();boolean hasT=false;
-            MutantsJSON eTemp=new MutantsJSON();boolean hasE=false;
-            for(int j=0;j<resTemp.get(i).mutateLineType.size();j++){
-                if(tOps.contains(resTemp.get(i).mutateLineType.get(j))) {
-                    if(!hasT) {
-                        hasT=true;
+        ArrayList<ArrayList<MutantsJSON>> res = new ArrayList<ArrayList<MutantsJSON>>();
+        ArrayList<MutantsJSON> resTraditional = new ArrayList<MutantsJSON>();
+        ArrayList<MutantsJSON> resESC = new ArrayList<MutantsJSON>();
+        for (int i = 0; i < resTemp.size(); i++) {
+            MutantsJSON tTemp = new MutantsJSON();
+            boolean hasT = false;
+            MutantsJSON eTemp = new MutantsJSON();
+            boolean hasE = false;
+            for (int j = 0; j < resTemp.get(i).mutateLineType.size(); j++) {
+                if (tOps.contains(resTemp.get(i).mutateLineType.get(j))) {
+                    if (!hasT) {
+                        hasT = true;
                         tTemp.conName = resTemp.get(i).conName;
                         tTemp.oriLine = resTemp.get(i).oriLine;
                     }
                     tTemp.mutateLineType.add(resTemp.get(i).mutateLineType.get(j));
                     tTemp.mutateLine.add(resTemp.get(i).mutateLine.get(j));
                     tTemp.mutateLineNums.add(resTemp.get(i).mutateLineNums.get(j));
-                }else{
-                    if(!hasE) {
-                        hasE=true;
+                } else {
+                    if (!hasE) {
+                        hasE = true;
                         eTemp.conName = resTemp.get(i).conName;
                         eTemp.oriLine = resTemp.get(i).oriLine;
                     }
@@ -123,9 +142,9 @@ public class GenerateMutantController {
                     eTemp.mutateLineNums.add(resTemp.get(i).mutateLineNums.get(j));
                 }
             }
-            if(hasT)
+            if (hasT)
                 resTraditional.add(tTemp);
-            if(hasE)
+            if (hasE)
                 resESC.add(eTemp);
         }
         res.add(resTemp);
@@ -133,53 +152,56 @@ public class GenerateMutantController {
         res.add(resESC);
         return JSON.toJSONString(res);
     }
-    public static MutantsJSON genMutant(String projectPath,String contract,String name,ArrayList<MuType>types) throws IOException {
+
+    public static MutantsJSON genMutant(String projectPath, String contract, String name, ArrayList<MuType> types)
+            throws IOException {
         Mutant.clear();
-        File fileDir=new File(projectPath+"\\Mutants");
-        if(!fileDir.exists()){//如果文件夹不存在
-            fileDir.mkdir();//创建文件夹
+        File fileDir = new File(projectPath + "\\Mutants");
+        if (!fileDir.exists()) {// 如果文件夹不存在
+            fileDir.mkdir();// 创建文件夹
         }
 
-        FileWriter writer=new FileWriter(new File(fileDir+"\\ori_"+name));
+        FileWriter writer = new FileWriter(new File(fileDir + "\\ori_" + name));
         writer.write(contract);
         writer.close();
-        //后面写处理多个文件
-        String json= GenASTServiceClient.genAST(fileDir+"\\ori_"+name);
-        SourceUnit su= JSON.parseObject(json, SourceUnit.class);
+        // 后面写处理多个文件
+        String json = GenASTServiceClient.genAST(fileDir + "\\ori_" + name);
+        SourceUnit su = JSON.parseObject(json, SourceUnit.class);
         su.addToMutant(types);
         su.output();
         System.out.println(Mutant.lines.size());
         Mutant.Repair();
-        writer=new FileWriter(new File(fileDir+"\\ori_"+name));
-        String content="";
-        for(int i=0;i<Mutant.lines.size();i++)
-            content+=Mutant.lines.get(i).getContent()+"\n";
+        writer = new FileWriter(new File(fileDir + "\\ori_" + name));
+        String content = "";
+        for (int i = 0; i < Mutant.lines.size(); i++)
+            content += Mutant.lines.get(i).getContent() + "\n";
         writer.write(content);
         writer.close();
-        writer=new FileWriter(new File(fileDir+"\\mut_"+name));
+        writer = new FileWriter(new File(fileDir + "\\mut_" + name));
         writer.write("");
-        for(int i=0;i<Mutant.mutateLine.size();i++){
-            content="";
-            content+=Mutant.mutateLineNums.get(i)+" "+MuType.class.getEnumConstants()[Mutant.mutateLineTypeNums.get(i)]+"\n";
-            content+=Mutant.mutateLine.get(i)+"\n";
+        for (int i = 0; i < Mutant.mutateLine.size(); i++) {
+            content = "";
+            content += Mutant.mutateLineNums.get(i) + " "
+                    + MuType.class.getEnumConstants()[Mutant.mutateLineTypeNums.get(i)] + "\n";
+            content += Mutant.mutateLine.get(i) + "\n";
             writer.append(content);
         }
         writer.close();
-        MutantsJSON res=new MutantsJSON();
-        res.conName=name;
-        for(int i=0;i<Mutant.lines.size();i++)
+        MutantsJSON res = new MutantsJSON();
+        res.conName = name;
+        for (int i = 0; i < Mutant.lines.size(); i++)
             res.oriLine.add(Mutant.lines.get(i).getContent());
-        for(int i=0;i<Mutant.mutateLine.size();i++)
+        for (int i = 0; i < Mutant.mutateLine.size(); i++)
             res.mutateLine.add(Mutant.mutateLine.get(i));
-        for(int i=0;i<Mutant.mutateLineNums.size();i++)
+        for (int i = 0; i < Mutant.mutateLineNums.size(); i++)
             res.mutateLineNums.add(Mutant.mutateLineNums.get(i));
-        for(int i=0;i<Mutant.mutateLineTypeNums.size();i++)
+        for (int i = 0; i < Mutant.mutateLineTypeNums.size(); i++)
             res.mutateLineType.add(MuType.class.getEnumConstants()[Mutant.mutateLineTypeNums.get(i)].toString());
         return res;
     }
 
-    public static void main(String[]args){
-        System.out.println(generateMutant0("C:\\Users\\belikout\\Desktop\\all_object\\cryptofin-solidity","[\"array-utils/AddressArrayUtils.sol\"]","[\"ASR\",\"AOR\",\"COR\",\"ROR\",\"FSC\",\"FVC\",\"PKD\",\"EUR\",\"RSD\",\"RSC\"]"));
+    public static void main(String[] args) {
+        System.out.println(generateMutant0());
 
     }
 }

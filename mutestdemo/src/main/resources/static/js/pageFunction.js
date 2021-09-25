@@ -186,14 +186,16 @@ function generateMutant() {
             types[types.length] = ops.item(i).id;
         }
     }
+    console.log(JSON.stringify(testContractsName));
     $.ajax({
         type: 'GET',
         url: '/generateMutant',
         cache: 'false',
+        dataType: 'jsonp',
         data: {
             "projectPath": projectPath,
-            "contracts": JSON.stringify(testContractsName),
-            "types": JSON.stringify(types)
+            "contracts": "",
+            "types": ""
         },
         dataType: 'json',
         //contentType : 'application/x-www-form-urlencoded;charset=UTF-8',
