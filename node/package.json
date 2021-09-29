@@ -10,6 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@solidity-parser/parser": "^0.13.2",
+    "solidity-parser": "^0.4.0",
     "solidity-parser-antlr": "^0.4.3",
     "thrift": "^0.12.0"
   }

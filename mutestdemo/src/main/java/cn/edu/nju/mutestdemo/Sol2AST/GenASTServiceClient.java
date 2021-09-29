@@ -1,5 +1,9 @@
 package cn.edu.nju.mutestdemo.Sol2AST;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
@@ -7,15 +11,14 @@ import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 
-import java.io.*;
-
 public class GenASTServiceClient {
 
     public static void main(String[] args) {
-        genAST("C:\\\\Users\\\\belikout\\\\Desktop\\\\test.sol");
+        genAST("C:\\\\Users\\\\ramah\\\\Desktop\\\\test.sol");
     }
-    public static String genAST(String SolPath){
-        System.out.println("客户端启动....");
+
+    public static String genAST(String SolPath) {
+
         TTransport transport = null;
         try {
             transport = new TSocket("localhost", 9898, 30000);
@@ -28,21 +31,26 @@ public class GenASTServiceClient {
             transport.close();
             return result;
         } catch (TTransportException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
+            System.out.println("TTTrasnport error   : " + e.getLocalizedMessage());
+
             return "TTransportError";
         } catch (TException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
+            System.out.println("TEexception error   : " + e.getLocalizedMessage());
+
             return "TError";
         }
     }
-    private static String getFile(String path){
-        String out="";
+
+    private static String getFile(String path) {
+        String out = "";
         try {
             BufferedReader br = new BufferedReader(new FileReader(path));// 读取sol
-            String s  = null;
+            String s = null;
 
             while ((s = br.readLine()) != null) {
-                out+=s+"\n";
+                out += s + "\n";
             }
             br.close();
             return out;
@@ -54,4 +62,3 @@ public class GenASTServiceClient {
     }
 
 }
-

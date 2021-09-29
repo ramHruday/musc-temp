@@ -12,6 +12,7 @@ import com.alibaba.fastjson.JSONArray;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import cn.edu.nju.mutestdemo.ASTMutation.Mutant;
@@ -24,7 +25,7 @@ import cn.edu.nju.mutestdemo.Sol2AST.GenASTServiceClient;
 @RequestMapping
 @Controller
 public class GenerateMutantController {
-    static String ProjectPath = "C:\\Users\\ramah\\personal-projects\\Ballot";
+    static String ProjectPath = "C:\\Users\\belikout\\Desktop\\metacoin-box-master";
     static ArrayList<String> tOps = new ArrayList<String>();
     static ArrayList<String> eOps = new ArrayList<String>();
 
@@ -57,10 +58,8 @@ public class GenerateMutantController {
 
     @RequestMapping("/generateMutant")
     @ResponseBody
-    public static String generateMutant0() {
-        String path = "C:\\Users\\ramah\\personal-projects\\Ballot";
-        String types = "[\"ASR\",\"AOR\",\"COR\"]";
-        String contracts = "['Ballot.sol']";
+    public static String generateMutant0(@RequestParam("projectPath") String path,
+            @RequestParam("contracts") String contracts, @RequestParam("types") String types) {
         CopyDir.makeMutationDir(path);
 
         JSONArray conArrJson = JSONArray.parseArray(contracts);
@@ -81,11 +80,8 @@ public class GenerateMutantController {
                 typeArr.add(MuType.COR);
         }
         ArrayList<MutantsJSON> resTemp = new ArrayList<MutantsJSON>();
-        File file = new File(path + "\\MuSC_dup\\ballot-contract\\contracts");
-        System.out.println(file.getName() + typesArr);
+        File file = new File(path + "\\MuSC_dup\\contracts");
         if (file.exists()) {
-
-            System.out.println(file.getName() + typesArr);
             File[] files = file.listFiles();
             for (File file2 : files) {
                 // 如果该文件需变异则开始变异体生成
@@ -103,7 +99,6 @@ public class GenerateMutantController {
                             // TODO Auto-generated catch block
                             e.printStackTrace();
                         }
-                        System.out.println(content + file2.getName() + typesArr);
                         MutantsJSON temp = genMutant(path + "\\MuSC_dup", content, file2.getName(), typesArr);
                         if (temp.mutateLine.size() > 0)
                             resTemp.add(temp);
@@ -166,6 +161,8 @@ public class GenerateMutantController {
         writer.close();
         // 后面写处理多个文件
         String json = GenASTServiceClient.genAST(fileDir + "\\ori_" + name);
+        System.out.println(json + "mmmmmmmmmmmmmmmmmmaaaaaaaaaaaaaaaaaain");
+
         SourceUnit su = JSON.parseObject(json, SourceUnit.class);
         su.addToMutant(types);
         su.output();
@@ -201,7 +198,9 @@ public class GenerateMutantController {
     }
 
     public static void main(String[] args) {
-        System.out.println(generateMutant0());
+        System.out.println(generateMutant0("C:\\Users\\belikout\\Desktop\\all_object\\cryptofin-solidity",
+                "[\"array-utils/AddressArrayUtils.sol\"]",
+                "[\"ASR\",\"AOR\",\"COR\",\"ROR\",\"FSC\",\"FVC\",\"PKD\",\"EUR\",\"RSD\",\"RSC\"]"));
 
     }
 }
